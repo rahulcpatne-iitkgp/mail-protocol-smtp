@@ -53,22 +53,12 @@ The server reads the user registry from `userfile`, creates mailbox directories 
 
 ### Concurrency Model
 
-The server uses **I/O multiplexing with `select()`** to handle multiple concurrent client connections within a single-threaded event loop. This approach:
+The server uses **I/O multiplexing with `select()`** to handle multiple concurrent client connections within a single-threaded event loop. All sockets in server mode are set to NON-BLOCKING.
 
-- Avoids multi-threading complexity and synchronization overhead
-- Maintains per-client state in a fixed array (`MAX_CLIENTS = 100`)
 - Uses a 1-second select timeout to periodically check for mode selection timeouts
 - Each client has an independent receive buffer for handling partial TCP reads (TCP stream reassembly)
 
-### Mailbox File ID Management
-
-- Each user's mailbox is stored in `mailbox/<username>/`
-- Mail files are named with monotonically increasing integers (`1.txt`, `2.txt`, etc.)
-- On server startup, the highest existing ID is determined by scanning each user's directory
-- The next ID is always `max_existing_id + 1`, ensuring **deleted IDs are never reused**
-- This approach persists across server restarts
-
-### Protocol State Machines
+### Protocol States
 
 **SMTP2 (Send Mode):**
 ```
@@ -90,7 +80,6 @@ AUTH_WAIT → (challenge-response) → AUTHENTICATED → (commands) → QUIT
 ### Timeout Handling
 
 - **Server-side:** 30-second timeout for mode selection after connection; client is disconnected if no `MODE SEND` or `MODE RECV` is received
-- **Client-side:** Gracefully handles closed connections with informative messages and automatic reconnection
 
 ## Protocol Summary
 
@@ -116,20 +105,7 @@ AUTH_WAIT → (challenge-response) → AUTHENTICATED → (commands) → QUIT
 | `COUNT` | `OK N` | Get message count |
 | `QUIT` | `BYE` | Close connection |
 
-## File Format
-
-Mail files are stored with the following structure:
-
-```
-From: <display_name>
-To: <comma-separated recipients>
-Subject: <subject_text>
-Date: <YYYY-MM-DD HH:MM:SS>
----
-<body text>
-```
-
-## Assumptions and Constraints
+## Constraints
 
 | Parameter | Limit |
 |-----------|-------|
@@ -143,6 +119,11 @@ Date: <YYYY-MM-DD HH:MM:SS>
 | Mode selection timeout | 30 seconds |
 | Authentication attempts | 3 maximum |
 
+## Assumptions
+
+- Server lists mail ids in sorted order
+- Client reconnects before each time menu is printed causing an extra connection before quitting
+
 ## Files
 
 | File | Description |
@@ -152,21 +133,3 @@ Date: <YYYY-MM-DD HH:MM:SS>
 | `Makefile` | Build configuration |
 | `users.txt` | Sample user registry (7 users) |
 | `mailbox/` | Auto-created directory for user mailboxes |
-
-## Testing
-
-The implementation has been tested for:
-
-- ✓ Basic send/receive workflow
-- ✓ Multiple recipients with duplicate filtering
-- ✓ Authentication success and failure cases
-- ✓ Mode selection timeout (30 seconds)
-- ✓ Out-of-sequence command rejection
-- ✓ Non-existent user handling
-- ✓ Dot-stuffing for body lines starting with `.`
-- ✓ Empty subject handling
-- ✓ Concurrent client connections
-
-## Author
-
-Computer Networks Laboratory - Mini Project 2
