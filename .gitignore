@@ -1,3 +1,8 @@
+mailbox/
+misc/
+tests/
+simple_mail.txt
+
 # Prerequisites
 *.d
 
