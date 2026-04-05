@@ -81,6 +81,14 @@ AUTH_WAIT → (challenge-response) → AUTHENTICATED → (commands) → QUIT
 
 - **Server-side:** 30-second timeout for mode selection after connection; client is disconnected if no `MODE SEND` or `MODE RECV` is received
 
+### Mailbox File ID Management
+
+- Each user's mailbox is stored in `mailbox/<username>/`
+- Mail files are named with monotonically increasing integers (`1.txt`, `2.txt`, etc.)
+- On server startup, the highest existing ID is determined by scanning each user's directory
+- The next ID is always `max_existing_id + 1`, ensuring **deleted IDs are never reused**
+- This approach persists across server restarts
+
 ## Protocol Summary
 
 ### SMTP2 Commands (MODE SEND)
