@@ -1,7 +1,9 @@
 mailbox/
 misc/
 tests/
-simple_mail.txt
+smserver
+smclient
+
 
 # Prerequisites
 *.d
